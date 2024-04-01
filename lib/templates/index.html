@@ -1,0 +1,70 @@
+<HTML>
+<HEAD>
+    <TITLE>ML</TITLE>
+    <META http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <LINK rel="stylesheet" type="text/css" href="style.css">
+    <script>
+        async function delete_task(task_id) {
+            const data = new URLSearchParams();
+            data.append('task_id', task_id);
+            await fetch('/delete_task', {
+                method: 'POST',
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: data,
+            })
+            console.log(task_id);
+            location.reload();
+        }
+
+        function downloadURI(id, file_name)
+        {
+            const uri = '/download_file/' + id;
+            const link = document.createElement("a");
+            link.setAttribute('download', file_name);
+            link.href = uri;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        }
+
+
+
+    </script>
+</HEAD>
+<BODY>
+ <H1>Задачи</H1>
+    <div>
+   <table>
+        <thead>
+            <tr>
+                <th>Задача</th>
+                <th>Статус</th>
+                <th>Результат</th>
+                <th></th>
+        </thead>
+        <tbody>
+            {% for task in tasks %}
+                <tr>
+                    <td>{{ task.filename }}</td>
+                    <td>{{ task.status }}</td>
+                    <td>
+                        {% if task.result %}
+                        {{ task.result }} <a class="button success" onclick="downloadURI({{ task.id }}, '{{ task.result }}')">Загрузить</a>
+                        {% endif %}
+                    </td>
+                    <td><a class="button dark" onclick="delete_task({{ task.id }})">Удалить</a></td>
+                </tr>
+            {% endfor %}
+    </table>
+    </div>
+    <div class="form_container">
+        <form class="file_form" method="POST" enctype="multipart/form-data" action="/upload_file">
+            <input type="file" name="file">
+            <button type="submit">Отправить</button>
+        </form>
+
+    </div>
+</BODY>
+</HTML>
