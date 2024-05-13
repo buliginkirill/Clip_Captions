@@ -18,3 +18,4 @@ INPUT_FOLDER = './input/'     # Директория входных данных
 """Настройки речевой модели"""
 WHISPER_MODEL = 'base'       #  Модель распознавания звука
 #WHISPER_MODEL = 'large-v3'  #
+#WHISPER_MODEL = './ggml-small.bin'

@@ -1,9 +1,12 @@
 import os
 import uuid
+from typing import Optional
+
 from flask import Flask, render_template, send_from_directory, request, redirect
-from .controller import controller
+from .controller import Controller
 from .constants import OUTPUT_FOLDER
 app = Flask(__name__)
+controller: Optional[Controller] = None
 
 @app.route('/style.css')
 def style():
@@ -22,6 +25,7 @@ def delete_task():
     controller.delete_task(task_id)
     return 'OK'
 
+
 @app.route('/upload_file', methods=['POST'])
 def upload_file():
     print(dict(request.form))
@@ -32,6 +36,7 @@ def upload_file():
     print(controller._tasks)
     return redirect("/", code=302)
 
+
 @app.route('/download_file/<task_id>', methods=['GET'])
 def download_file(task_id):
     print(task_id)
@@ -40,3 +45,8 @@ def download_file(task_id):
     #print(uploads, filename, app.root_path, OUTPUT_FOLDER[2:])
     return send_from_directory('..'+OUTPUT_FOLDER[1:], filename)
 
+def run_flask(host, port):
+    global controller
+    print('run flask')
+    controller = Controller('flask')
+    app.run(debug=False, threaded=False, port=port, host=host)

@@ -8,8 +8,11 @@ import cv2 as cv
 import numpy as np
 import pickle
 import whisper
+#from whisper_cpp_python import Whisper
 from .constants import *
 
+
+#model = Whisper(model_path=WHISPER_MODEL)
 model = whisper.load_model(WHISPER_MODEL)
 
 

@@ -9,25 +9,29 @@ from .constants import *
 
 class Controller:
 
-    def __init__(self):
+    def __init__(self, instance, absolute_path=False):
+        self.instance = instance
+        self.absolute_path = absolute_path
+        self.pickle_name = f'{self.instance}_tasks.pickle'
         self._tasks = []
-        if os.path.isfile('tasks.pickle'):
+        if os.path.isfile(self.pickle_name):
             self.pickle_load()
         threading.Thread(target=self.processor_thread).start()
         self.lock = threading.Lock()
 
-
     def add_task(self, filename, status, result, storage_name):
+        task_id = int(datetime.timestamp(datetime.now())*1000)
         with self.lock:
             self._tasks.append(
                 {
-                  'id': int(datetime.timestamp(datetime.now())*1000),
+                  'id': task_id,
                   'filename': filename,
                   'storage_name': storage_name,
                   'status': status,
                   'result': result}
             )
             self.pickle_save()
+        return task_id
 
 
     def get_tasks(self):
@@ -35,25 +39,27 @@ class Controller:
 
 
     def pickle_save(self):
-        with open('tasks.pickle', 'wb') as f:
+        with open(self.pickle_name, 'wb') as f:
             pickle.dump(self._tasks, f)
 
     def pickle_load(self):
-        with open('tasks.pickle', 'rb') as f:
+        with open(self.pickle_name, 'rb') as f:
             self._tasks = pickle.load(f)
-        for t in filter(lambda x: x['status'] not in {'NEW','DONE'}, self._tasks):
+        for t in filter(lambda x: x['status'] not in {'NEW', 'DONE'}, self._tasks):
             t['status'] = 'CANCELED'
         self.pickle_save()
 
     def delete_task(self, task_id):
         with self.lock:
             task_to_delete = next(filter(lambda x: str(x['id']) == task_id, self._tasks))
-            if os.path.isfile(INPUT_FOLDER + task_to_delete['storage_name']):
-                os.remove(INPUT_FOLDER + task_to_delete['storage_name'])
-            if os.path.isfile(OUTPUT_FOLDER + task_to_delete['storage_name']+'.docx'):
-                os.remove(OUTPUT_FOLDER + task_to_delete['storage_name']+'.docx')
+            in_file_name = INPUT_FOLDER + task_to_delete['storage_name'] if not self.absolute_path else task_to_delete['storage_name']
+            if os.path.isfile(in_file_name):
+                os.remove(in_file_name)
+            out_file_name = OUTPUT_FOLDER + task_to_delete['storage_name']+'.docx' if not self.absolute_path else task_to_delete['storage_name']+'.docx'
+            if os.path.isfile(out_file_name):
+                os.remove(out_file_name)
             self._tasks = list(filter(lambda x: str(x['id']) != task_id, self._tasks))
-            print(self._tasks)
+            # print(self._tasks)
             self.pickle_save()
 
     def processor_thread(self):
@@ -72,9 +78,9 @@ class Controller:
                 task['status'] = 'PROCESSING'
                 self.pickle_save()
             print('Processing task')
-            in_file = INPUT_FOLDER + task['storage_name']
-            out_file = OUTPUT_FOLDER + task['storage_name']+'.docx'
-            print(task)
+            in_file = INPUT_FOLDER + task['storage_name'] if not self.absolute_path else task['storage_name']
+            out_file = OUTPUT_FOLDER + task['storage_name']+'.docx' if not self.absolute_path else task['storage_name']+'.docx'
+            #print(task)
             status_partial = partial(save_status, task)
             status_partial('TESTING')
             try:
@@ -90,6 +96,15 @@ class Controller:
 
     def get_download_file_name(self, task_id):
         task = next(filter(lambda x: str(x['id']) == task_id, self._tasks))
-        return OUTPUT_FOLDER + task['storage_name']+'.docx'
+        return OUTPUT_FOLDER + task['storage_name']+'.docx' if not self.absolute_path else task['storage_name']+'.docx'
 
-controller = Controller()
+    def wait_for_task(self, task_id):
+        while True:
+            task = next(filter(lambda x: x['id'] == task_id, self._tasks))
+            if task['status'] == 'DONE':
+                return True
+            elif task['status'] == 'ERROR' or task['status'] == 'CANCELED':
+                return False
+            sleep(1)
+
+#controller = Controller()
